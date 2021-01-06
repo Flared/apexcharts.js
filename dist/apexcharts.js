@@ -1,6 +1,6 @@
 /*!
  * ApexCharts v3.23.1
- * (c) 2018-2020 Juned Chhipa
+ * (c) 2018-2021 Juned Chhipa
  * Released under the MIT License.
  */
 (function (global, factory) {
@@ -12001,7 +12001,7 @@
             });
             seriesX.forEach(function (s, j) {
               if (j > 0) {
-                var xDiff = s - gl.seriesX[i][j - 1];
+                var xDiff = s - seriesX[j - 1];
 
                 if (xDiff > 0) {
                   gl.minXDiff = Math.min(xDiff, gl.minXDiff);
@@ -25415,10 +25415,10 @@
               }
 
               if (topParent != document) throw new Error('Element not in the dom');
-            } else {} // the element is NOT in the dom, throw error
-            // disabling the check below which fixes issue #76
-            // if (!document.documentElement.contains(element.node)) throw new Exception('Element not in the dom')
-            // find native bbox
+            } else {// the element is NOT in the dom, throw error
+              // disabling the check below which fixes issue #76
+              // if (!document.documentElement.contains(element.node)) throw new Exception('Element not in the dom')
+            } // find native bbox
 
 
             box = element.node.getBBox();
