@@ -406,7 +406,9 @@ class Radar {
             Array.isArray(xaxisLabelsConfig.style.colors) &&
             xaxisLabelsConfig.style.colors[i]
               ? xaxisLabelsConfig.style.colors[i]
-              : '#a8a8a8',
+              : typeof xaxisLabelsConfig.style.colors === 'string'
+                ? xaxisLabelsConfig.style.colors
+                : '#a8a8a8',
           dataLabelsConfig: {
             textAnchor: textPos.textAnchor,
             dropShadow: { enabled: false },
