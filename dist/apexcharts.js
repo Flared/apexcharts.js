@@ -23899,9 +23899,6 @@
           chartInnerDimensions = Math.max(w.globals.radialSize * 2.05, maxHeight);
         }
         var newHeight = chartInnerDimensions + gl.translateY + legendHeight + offY;
-        if (gl.dom.elLegendForeign) {
-          gl.dom.elLegendForeign.setAttribute('height', newHeight);
-        }
 
         // fix apexcharts/apexcharts.js/issues/3105 (when % is provided in height, it keeps increasing)
         if (w.config.chart.height && String(w.config.chart.height).indexOf('%') > 0) return;
