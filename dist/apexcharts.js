@@ -20523,9 +20523,10 @@
         });
         if (w.globals.noData) return ret;
         var elSeries = graphics.group();
+        var sizeOverride = this.w.config.plotOptions.radialBar.sizeOverride ? this.w.config.plotOptions.radialBar.sizeOverride : 2.05;
         var centerY = this.defaultSize / 2;
         var centerX = w.globals.gridWidth / 2;
-        var size = this.defaultSize / 2.05;
+        var size = this.defaultSize / sizeOverride;
         if (!w.config.chart.sparkline.enabled) {
           size = size - w.config.stroke.width - w.config.chart.dropShadow.blur;
         }
