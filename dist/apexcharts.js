@@ -21507,7 +21507,7 @@
               j: i,
               parent: elXAxisWrap,
               className: 'apexcharts-xaxis-label',
-              color: Array.isArray(xaxisLabelsConfig.style.colors) && xaxisLabelsConfig.style.colors[i] ? xaxisLabelsConfig.style.colors[i] : '#a8a8a8',
+              color: Array.isArray(xaxisLabelsConfig.style.colors) && xaxisLabelsConfig.style.colors[i] ? xaxisLabelsConfig.style.colors[i] : typeof xaxisLabelsConfig.style.colors === 'string' ? xaxisLabelsConfig.style.colors : '#a8a8a8',
               dataLabelsConfig: _objectSpread2({
                 textAnchor: textPos.textAnchor,
                 dropShadow: {
