@@ -334,9 +334,11 @@ class Radar {
         }
 
         if (i === 0) {
+          const isOdd = polygon.length % 2 === 1
+
           this.yaxisLabelsTextsPos.push({
             x: p.x,
-            y: p.y,
+            y: w.config.yaxis[0].opposite ? (isOdd ? 0.8 : 1) * -p.y : p.y,
           })
         }
 
@@ -404,7 +406,7 @@ class Radar {
           className: 'apexcharts-xaxis-label',
           color:
             Array.isArray(xaxisLabelsConfig.style.colors) &&
-            xaxisLabelsConfig.style.colors[i]
+              xaxisLabelsConfig.style.colors[i]
               ? xaxisLabelsConfig.style.colors[i]
               : typeof xaxisLabelsConfig.style.colors === 'string'
                 ? xaxisLabelsConfig.style.colors
