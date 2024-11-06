@@ -118,4 +118,270 @@ describe('Multiple Y-axis Scales', () => {
       }
     ])
   })
+
+  it('should associate multiple series to multiple yaxes according to seriesName array spec', () => {
+    const chart = createChartWithOptions({
+      chart: {
+        type: 'line'
+      },
+      series: [
+        {
+          name: 'Series A',
+          data: logData
+        },
+        {
+          name: 'Series B',
+          data: logData
+        },
+        {
+          name: 'Series C',
+          data: logData
+        },
+        {
+          name: 'Series D',
+          data: logData
+        }
+      ],
+      yaxis: [
+        {
+          seriesName: ['Series A','Series B'],
+          min: 1000000,
+          max: 500000000,
+          tickAmount: 5,
+        },
+        {
+          seriesName: ['Series C','Series D'],
+          min: 1000000,
+          max: 500000000,
+          opposite: true
+        }
+      ]
+    })
+
+    const minYArr = chart.w.globals.minYArr
+    const maxYArr = chart.w.globals.maxYArr
+    const yAxisMap = chart.w.globals.seriesYAxisMap
+    const yAxisRevMap = chart.w.globals.seriesYAxisReverseMap
+
+    expect(minYArr).toEqual([1000000, 1000000, 1000000, 1000000])
+
+    expect(maxYArr).toEqual([500000000, 500000000, 500000000, 500000000])
+
+    expect(yAxisMap).toEqual([[0,1],[2,3]])
+    expect(yAxisRevMap).toEqual([0,0,1,1])
+  })
+
+  it('should associate series to yaxes according to seriesName then assign remainder to last free axis', () => {
+    const chart = createChartWithOptions({
+      chart: {
+        type: 'line'
+      },
+      series: [
+        {
+          name: 'Series A',
+          data: logData
+        },
+        {
+          name: 'Series B',
+          data: logData
+        },
+        {
+          name: 'Series C',
+          data: logData
+        },
+        {
+          name: 'Series D',
+          data: logData
+        }
+      ],
+      yaxis: [
+        {
+          seriesName: ['Series A','Series B'],
+          min: 1000000,
+          max: 500000000,
+          tickAmount: 5,
+        },
+        {
+          min: 1000000,
+          max: 500000000,
+          opposite: true
+        }
+      ]
+    })
+
+    const minYArr = chart.w.globals.minYArr
+    const maxYArr = chart.w.globals.maxYArr
+    const yAxisMap = chart.w.globals.seriesYAxisMap
+    const yAxisRevMap = chart.w.globals.seriesYAxisReverseMap
+
+    expect(minYArr).toEqual([1000000, 1000000, 1000000, 1000000])
+
+    expect(maxYArr).toEqual([500000000, 500000000, 500000000, 500000000])
+
+    expect(yAxisMap).toEqual([[0,1],[2,3]])
+    expect(yAxisRevMap).toEqual([0,0,1,1])
+  })
+
+  it('should associate series to yaxes according to seriesName then assign remainder to last axis', () => {
+    const chart = createChartWithOptions({
+      chart: {
+        type: 'line'
+      },
+      series: [
+        {
+          name: 'Series A',
+          data: logData
+        },
+        {
+          name: 'Series B',
+          data: logData
+        },
+        {
+          name: 'Series C',
+          data: logData
+        },
+        {
+          name: 'Series D',
+          data: logData
+        }
+      ],
+      yaxis: [
+        {
+          seriesName: ['Series A','Series B'],
+          min: 1000000,
+          max: 500000000,
+          tickAmount: 5,
+        },
+        {
+          seriesName: 'Series C',
+          min: 1000000,
+          max: 500000000,
+          opposite: true
+        }
+      ]
+    })
+
+    const minYArr = chart.w.globals.minYArr
+    const maxYArr = chart.w.globals.maxYArr
+    const yAxisMap = chart.w.globals.seriesYAxisMap
+    const yAxisRevMap = chart.w.globals.seriesYAxisReverseMap
+
+    expect(minYArr).toEqual([1000000, 1000000, 1000000, 1000000])
+
+    expect(maxYArr).toEqual([500000000, 500000000, 500000000, 500000000])
+
+    expect(yAxisMap).toEqual([[0,1],[2,3]])
+    expect(yAxisRevMap).toEqual([0,0,1,1])
+  })
+
+  it('should associate series to yaxes according to seriesName then assign remainder one-for-one', () => {
+    const chart = createChartWithOptions({
+      chart: {
+        type: 'line'
+      },
+      series: [
+        {
+          name: 'Series A',
+          data: logData
+        },
+        {
+          name: 'Series B',
+          data: logData
+        },
+        {
+          name: 'Series C',
+          data: logData
+        },
+        {
+          name: 'Series D',
+          data: logData
+        }
+      ],
+      yaxis: [
+        {
+          seriesName: ['Series A','Series B'],
+          min: 1000000,
+          max: 500000000,
+          tickAmount: 5,
+        },
+        {
+          min: 1000000,
+          max: 500000000,
+          opposite: true
+        },
+        {
+          min: 1000000,
+          max: 500000000,
+          opposite: true
+        }
+      ]
+    })
+
+    const minYArr = chart.w.globals.minYArr
+    const maxYArr = chart.w.globals.maxYArr
+    const yAxisMap = chart.w.globals.seriesYAxisMap
+    const yAxisRevMap = chart.w.globals.seriesYAxisReverseMap
+
+    expect(minYArr).toEqual([1000000, 1000000, 1000000, 1000000])
+
+    expect(maxYArr).toEqual([500000000, 500000000, 500000000, 500000000])
+
+    expect(yAxisMap).toEqual([[0,1],[2],[3]])
+    expect(yAxisRevMap).toEqual([0,0,1,2])
+  })
+
+  it('should associate series to yaxes according to seriesName before assigning remainder one-for-one', () => {
+    const chart = createChartWithOptions({
+      chart: {
+        type: 'line'
+      },
+      series: [
+        {
+          name: 'Series A',
+          data: logData
+        },
+        {
+          name: 'Series B',
+          data: logData
+        },
+        {
+          name: 'Series C',
+          data: logData
+        },
+        {
+          name: 'Series D',
+          data: logData
+        }
+      ],
+      yaxis: [
+        {
+          min: 1000000,
+          max: 500000000,
+          tickAmount: 5
+        },
+        {
+          seriesName: ['Series A','Series B'],
+          min: 1000000,
+          max: 500000000
+        },
+        {
+          min: 1000000,
+          max: 500000000,
+          opposite: true
+        }
+      ]
+    })
+
+    const minYArr = chart.w.globals.minYArr
+    const maxYArr = chart.w.globals.maxYArr
+    const yAxisMap = chart.w.globals.seriesYAxisMap
+    const yAxisRevMap = chart.w.globals.seriesYAxisReverseMap
+
+    expect(minYArr).toEqual([1000000, 1000000, 1000000, 1000000])
+
+    expect(maxYArr).toEqual([500000000, 500000000, 500000000, 500000000])
+
+    expect(yAxisMap).toEqual([[2],[0,1],[3]])
+    expect(yAxisRevMap).toEqual([1,1,0,2])
+  })
 })

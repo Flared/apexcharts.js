@@ -72,6 +72,9 @@ describe('Exponential values should parse', () => {
           ]
         }
       ],
+      yaxis: {
+        tickAmount: 10
+      },
       xaxis: {
         type: 'datetime'
       }
@@ -81,6 +84,6 @@ describe('Exponential values should parse', () => {
     const maxY = chart.w.globals.maxY
 
     expect(minY).toEqual(2.3e-7)
-    expect(maxY).toEqual(3.2599999999999993e-7)
+    expect(maxY).toEqual(3.1e-7)
   })
 })

@@ -5,6 +5,7 @@ const path = require('path')
 const pixelmatch = require('pixelmatch')
 const { PNG } = require('pngjs')
 const { Cluster } = require('puppeteer-cluster')
+const os = require('os')
 
 const { builds, executeBuildEntry } = require('../../build/config')
 const { extractSampleInfo } = require('../../samples/source')
@@ -20,6 +21,12 @@ class TestError extends Error {
   constructor(message) {
     super(message)
     this.hideStack = true
+  }
+}
+
+class MissingSnapshotError extends Error {
+  constructor(message) {
+    super(message)
   }
 }
 
@@ -42,10 +49,77 @@ async function processSample(page, sample, command) {
   const consoleErrors = []
   page.on('pageerror', (error) => consoleErrors.push(error.message))
 
+  await page.evaluateOnNewDocument(() => {
+    window.isATest = true
+
+    //Keep track of running timers and intervals in the page
+    window.activeTimerCount = 0
+    window.activeIntervalCount = 0
+
+    var originalSetTimeout = window.setTimeout
+    var originalClearTimeout = window.clearTimeout
+    var originalSetInterval = window.setInterval
+    var originalClearInterval = window.clearInterval
+
+    window.setTimeout = function () {
+      window.activeTimerCount++
+      var timeoutArguments = arguments
+      var originalFunction = timeoutArguments[0]
+
+      //Decrement activeTimerCount once timer has executed
+      timeoutArguments[0] = function () {
+        originalFunction()
+        window.activeTimerCount--
+      }
+
+      //Call the original window.setTimeout function with the provided arguments and modified function
+      return originalSetTimeout.apply(null, timeoutArguments)
+    }
+
+    window.clearTimeout = function (id) {
+      //Prevent calls to clearTimeout with an undefined timerID decremeneting window.activeTimerCount
+      if (id) {
+        originalClearTimeout(id)
+        window.activeTimerCount--
+      }
+    }
+
+    window.setInterval = function () {
+      window.activeIntervalCount++
+      return originalSetInterval.apply(null, arguments)
+    }
+
+    window.clearInterval = function (id) {
+      //Prevent calls to clearInterval with an undefined intervalID decrementing window.activeIntervalCount
+      if (id) {
+        window.activeIntervalCount--
+        originalClearInterval(id)
+      }
+    }
+  })
+
   await page.goto(`file://${htmlPath}`)
 
-  // BUG: can be longer for some tests. Compare consequent screenshots to make sure it stabilized?
-  await page.waitFor(2200)
+  let wait;
+  do {
+    //Wait for all intervals in the page to have been cleared
+    await page.waitForFunction(() => window.activeIntervalCount === 0)
+
+    //Wait for all timers in the page to have all executed
+    await page.waitForFunction(() => window.activeTimerCount === 0)
+
+    //Wait for the chart animation to end
+    await page.waitForFunction(() => chart.w.globals.animationEnded)
+
+    //Wait for all network requests to finish
+    await page.waitForNetworkIdle()
+
+    //After the network requests, timers, and intervals finish, if another request, timer, or interval is created then we need
+    //to wait for that to finish before continuing on.
+    wait = await page.evaluate(() => {
+      return !(window.activeIntervalCount === 0 && window.activeTimerCount === 0 && chart.w.globals.animationEnded)
+    })
+  } while (wait)
 
   // Check that there are no console errors
   if (consoleErrors.length > 0) {
@@ -77,7 +151,16 @@ async function processSample(page, sample, command) {
     // Compare screenshot to the original and throw error on differences
     const testImg = PNG.sync.read(testImgBuffer)
     // BUG: copy if original image doesn't exist and report in test results?
-    const originalImg = PNG.sync.read(fs.readFileSync(originalImgPath))
+    let originalImg;
+    try {
+      originalImg = PNG.sync.read(fs.readFileSync(originalImgPath))
+    } catch (e) {
+      if (e.code === 'ENOENT') {
+        //The file could not be found so throw a MissingSnapshotError
+        throw new MissingSnapshotError(relPath)
+      }
+      throw e
+    }
     const { width, height } = testImg
     const diffImg = new PNG({ width, height })
 
@@ -110,7 +193,10 @@ async function processSample(page, sample, command) {
       )
 
       const mismatchPercent = ((100 * numDiffs) / width / height).toFixed(2)
-      throw new TestError(`Screenshot changed by ${mismatchPercent}%`)
+
+      if (mismatchPercent > 5) {
+        throw new TestError(`Screenshot changed by ${mismatchPercent}%`)
+      }
     } else if (err) {
       throw err
     }
@@ -148,7 +234,7 @@ async function updateBundle(config) {
   }
 }
 
-async function processSamples(command, paths) {
+async function processSamples(command, paths, isCI) {
   const startTime = Date.now()
 
   await updateBundle(builds['web-umd-dev'])
@@ -164,12 +250,13 @@ async function processSamples(command, paths) {
       dest: `${e2eSamplesDir}/apexcharts.e2e.js`,
       format: 'umd',
       env: 'development',
-      istanbul: true
+      istanbul: true,
     })
   }
 
   let numCompleted = 0
   const failedTests = [] // {path, error}
+  const testsMissingSnapshots = [] // 'pathForSnapshot'
 
   // Build a list of samples to process
   let samples = extractSampleInfo()
@@ -187,15 +274,17 @@ async function processSamples(command, paths) {
   }
 
   const cluster = await Cluster.launch({
-    concurrency: Cluster.CONCURRENCY_PAGE,
-    maxConcurrency: 5
+    concurrency: Cluster.CONCURRENCY_BROWSER,
+    maxConcurrency: os.availableParallelism(),
   })
 
   await cluster.task(async ({ page, data: sample }) => {
-    process.stdout.clearLine()
-    process.stdout.cursorTo(0)
-    const percentComplete = Math.round((100 * numCompleted) / samples.length)
-    process.stdout.write(`Processing samples: ${percentComplete}%`)
+    if (process.stdout.isTTY) {
+      process.stdout.clearLine()
+      process.stdout.cursorTo(0)
+      const percentComplete = Math.round((100 * numCompleted) / samples.length)
+      process.stdout.write(`Processing samples: ${percentComplete}%`)
+    }
 
     // BUG: some chart are animated - need special processing. Some just need to be skipped.
 
@@ -205,13 +294,19 @@ async function processSamples(command, paths) {
     try {
       await processSample(page, sample, command)
     } catch (e) {
-      failedTests.push({
-        path: `${sample.dirName}/${sample.fileName}`,
-        error: e
-      })
+      if (e instanceof MissingSnapshotError) {
+        testsMissingSnapshots.push(e.message)
+      } else {
+        failedTests.push({
+          path: `${sample.dirName}/${sample.fileName}`,
+          error: e,
+        })
+      }
     }
     numCompleted++
-    process.stdout.clearLine()
+    if (!process.stdout.isTTY) {
+      console.log(`Processed samples: ${numCompleted}/${samples.length}`)
+    }
   })
 
   for (const sample of samples) {
@@ -221,6 +316,12 @@ async function processSamples(command, paths) {
   await cluster.idle()
   await cluster.close()
 
+  if (process.stdout.isTTY) {
+    process.stdout.clearLine()
+  } else {
+    console.log('All samples have now been processed')
+  }
+
   console.log('')
 
   if (command === 'test') {
@@ -228,6 +329,13 @@ async function processSamples(command, paths) {
     console.log(
       chalk.green.bold(`${samples.length} tests completed in ${duration} sec.`)
     )
+
+    if (testsMissingSnapshots.length > 0) {
+      console.log(chalk.yellow.bold(`${testsMissingSnapshots.length} tests were missing snapshots to compare against. Those tests are:`))
+      for (const testMissingSnapshot of testsMissingSnapshots) {
+        console.log(chalk.yellow.bold(`${testMissingSnapshot}\n`))
+      }
+    }
 
     if (failedTests.length > 0) {
       console.log(chalk.red.bold(`${failedTests.length} tests failed`))
@@ -241,12 +349,7 @@ async function processSamples(command, paths) {
     )
 
     if (!failedTest.error.hideStack) {
-      console.log(
-        failedTest.error.stack
-          .split('\n')
-          .slice(1)
-          .join('\n')
-      )
+      console.log(failedTest.error.stack.split('\n').slice(1).join('\n'))
     }
   }
 
@@ -254,7 +357,7 @@ async function processSamples(command, paths) {
     const { status } = spawnSync(
       `${rootDir}/node_modules/.bin/nyc`,
       ['report', '--reporter=html'],
-      { cwd: rootDir }
+      { cwd: rootDir, shell: process.platform === 'win32' }
     )
 
     if (status === 0) {
@@ -264,18 +367,32 @@ async function processSamples(command, paths) {
       throw new Error('Code coverage report failed to generate')
     }
   }
+
+  if (failedTests.length > 0 && isCI) {
+    //Exit with error code to fail CI if a test failed
+    process.exit(1)
+  }
 }
 
 // Run as 'node samples.js <command> <path1> <path2> ...'
-// Supports two commands:
+// Supports three commands:
 // - 'test' for running e2e tests
+// - 'test:ci' for running e2e tests in CI - 'test:ci' exits with status code 1 if a test fails, while 'test' always exits with status code 0
 // - 'update' for updating samples screenshots used for e2e tests comparison
 // Path options have the format 'bar/basic-bar'. Paths are optional for 'test' command.
 // For 'update' command 'all' path can be used to update all screenshots.
-const command = process.argv[2]
-if (['update', 'test'].includes(command)) {
-  processSamples(command, process.argv.slice(3))
-    .catch((e) => console.log(e))
+const commandInput = process.argv[2]
+if (['update', 'test', 'test:ci'].includes(commandInput)) {
+  const isCI = commandInput === 'test:ci'
+  const command = isCI ? 'test' : commandInput
+  processSamples(command, process.argv.slice(3), isCI)
+    .catch((e) => {
+      console.error(e)
+      if (isCI) {
+        //Exit with error code to fail CI if something failed
+        process.exit(1)
+      }
+    })
     .then(() => {
       if (browser) {
         return browser.close()

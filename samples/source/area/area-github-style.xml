@@ -71,7 +71,7 @@
 chart: {
   id: 'chartyear',
   type: 'area',
-  height: 160,
+  height: 180,
   background: '#F6F8FA',
   toolbar: {
     show: false,
@@ -95,7 +95,7 @@ chart: {
 colors: ['#FF7F00'],
 stroke: {
   width: 0,
-  curve: 'smooth'
+  curve: 'monotoneCubic'
 },
 dataLabels: {
   enabled: false
@@ -105,8 +105,8 @@ fill: {
   type: 'solid'
 },
 yaxis: {
-  show: false,
-  tickAmount: 3,
+  show: true,
+  forceNiceScale: true
 },
 xaxis: {
   type: 'datetime',
@@ -126,7 +126,7 @@ xaxis: {
 
 <options>
 chart: {
-  height: 200,
+  height: 150,
   type: 'area',
   background: '#F6F8FA',
   toolbar: {
@@ -139,8 +139,8 @@ chart: {
   selection: {
     enabled: true,
     xaxis: {
-      min: new Date('26 Jan 2014').getTime(),
-      max: new Date('29 Mar 2015').getTime()
+      min: new Date('15 Feb 2016').getTime(),
+      max: new Date('14 Feb 2017').getTime()
     }
   },
 },
@@ -150,7 +150,7 @@ dataLabels: {
 },
 stroke: {
   width: 0,
-  curve: 'smooth'
+  curve: 'monotoneCubic'
 },
 fill: {
   opacity: 1,
