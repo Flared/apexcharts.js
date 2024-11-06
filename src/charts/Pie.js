@@ -293,7 +293,7 @@ class Pie {
           this.centerX,
           this.centerY,
           w.globals.radialSize / 1.25 +
-            w.config.plotOptions.pie.dataLabels.offset,
+          w.config.plotOptions.pie.dataLabels.offset,
           (startAngle + angle / 2) % this.fullAngle
         )
       } else if (this.chartType === 'donut') {
@@ -301,7 +301,7 @@ class Pie {
           this.centerX,
           this.centerY,
           (w.globals.radialSize + this.donutSize) / 2 +
-            w.config.plotOptions.pie.dataLabels.offset,
+          w.config.plotOptions.pie.dataLabels.offset,
           (startAngle + angle / 2) % this.fullAngle
         )
       }
@@ -368,7 +368,7 @@ class Pie {
         if (
           angle !== 0 &&
           w.config.plotOptions.pie.dataLabels.minAngleToShowLabel <
-            sectorAngleArr[i]
+          sectorAngleArr[i]
         ) {
           let formatter = w.config.dataLabels.formatter
           if (formatter !== undefined) {
@@ -666,7 +666,7 @@ class Pie {
     if (
       Math.ceil(endDeg) >=
       this.fullAngle +
-        (this.w.config.plotOptions.pie.startAngle % this.fullAngle)
+      (this.w.config.plotOptions.pie.startAngle % this.fullAngle)
     ) {
       endDeg =
         this.fullAngle +
@@ -763,8 +763,8 @@ class Pie {
         const yLabel = helpers.drawYAxisTexts(
           this.centerX,
           this.centerY -
-            circleSize +
-            parseInt(w.config.yaxis[0].labels.style.fontSize, 10) / 2,
+          circleSize +
+          parseInt(w.config.yaxis[0].labels.style.fontSize, 10) / 2,
           i,
           yTexts[i]
         )
