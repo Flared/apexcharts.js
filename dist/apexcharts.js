@@ -25294,10 +25294,9 @@
           chartInnerDimensions = Math.max(w.globals.radialSize * 2.05, maxHeight);
         }
         var newHeight = Math.ceil(chartInnerDimensions + gl.translateY + legendHeight + offY);
-        if (gl.dom.elLegendForeign) {
-          gl.dom.elLegendForeign.setAttribute('height', newHeight);
-        }
-        if (w.config.chart.height && String(w.config.chart.height).includes('%')) return;
+
+        // fix apexcharts/apexcharts.js/issues/3105 (when % is provided in height, it keeps increasing)
+        if (w.config.chart.height && String(w.config.chart.height).indexOf('%') > 0) return;
         gl.dom.elWrap.style.height = "".concat(newHeight, "px");
         Graphics.setAttrs(gl.dom.Paper.node, {
           height: newHeight

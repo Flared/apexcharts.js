@@ -89,8 +89,8 @@ export default class Core {
       cnf.theme.mode === 'dark' && !cnf.chart.background
         ? '#424242'
         : cnf.theme.mode === 'light' && !cnf.chart.background
-        ? '#fff'
-        : cnf.chart.background
+          ? '#fff'
+          : cnf.chart.background
 
     this.setSVGDimensions()
 
@@ -407,11 +407,10 @@ export default class Core {
       const offsetY = cnf.chart.sparkline.enabled
         ? 0
         : gl.axisCharts
-        ? cnf.chart.parentHeightOffset
-        : 0
-      gl.dom.Paper.node.parentNode.parentNode.style.minHeight = `${
-        gl.svgHeight + offsetY
-      }px`
+          ? cnf.chart.parentHeightOffset
+          : 0
+      gl.dom.Paper.node.parentNode.parentNode.style.minHeight = `${gl.svgHeight + offsetY
+        }px`
     }
 
     gl.dom.elWrap.style.width = `${gl.svgWidth}px`
@@ -464,11 +463,8 @@ export default class Core {
       chartInnerDimensions + gl.translateY + legendHeight + offY
     )
 
-    if (gl.dom.elLegendForeign) {
-      gl.dom.elLegendForeign.setAttribute('height', newHeight)
-    }
-
-    if (w.config.chart.height && String(w.config.chart.height).includes('%'))
+    // fix apexcharts/apexcharts.js/issues/3105 (when % is provided in height, it keeps increasing)
+    if (w.config.chart.height && String(w.config.chart.height).indexOf('%') > 0)
       return
 
     gl.dom.elWrap.style.height = `${newHeight}px`
